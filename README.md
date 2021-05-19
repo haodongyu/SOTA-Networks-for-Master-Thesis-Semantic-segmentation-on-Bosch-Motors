@@ -1,0 +1,1 @@
+# SOTA-Networks-for-Master-Thesis-Semantic-segmentation-on-Bosch-Motors
