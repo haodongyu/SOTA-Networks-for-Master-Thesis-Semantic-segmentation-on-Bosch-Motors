@@ -1,7 +1,10 @@
 # SOTA-Networks-for-Master-Thesis-Semantic-segmentation-on-Bosch-Motors
 This project is mainly about the used codes for Haodong Yu's master thesis.   
 It's a part of AgliProbot project from Lehrstuhl für Interaktive und Echtzeitsysteme in Karlsruher Institute für Technologie. This part will focus on using SOTA deep learning networks to realize semantic segmentation on Bosch Motors.  
-Now it contains **PointNet++** and **Dynamic Graph CNN for Learning on Point Clouds (DGCNN)**. For the further information please read :  
+  
+Now it contains **PointNet++** and **Dynamic Graph CNN for Learning on Point Clouds (DGCNN)**.  
+  
+For the further information please read :  
 
 ## PointNet/PointNet2
 run training and test process:  
