@@ -11,7 +11,19 @@ python test_semseg.py --log_dir pointnet2_sem_seg --root /home/ies/hyu/data/Zivi
 You can set the your data folder by command `--root`.  
 The `--log_dir` command will build a new dir in the path `./Pointnet_Pointnet2_pytorch/log/sem_seg/` and save the log and parameter used in training in this folder.  
   
-For the further necessary settings please see the [train_semseg.py](./train_semseg.py) and [test_semseg.py](./test_semseg.py).
+For the further necessary settings please see the [train_semseg.py](./train_semseg.py) and [test_semseg.py](./test_semseg.py).  
+
+## Visualization  
+### Using show3d_balls.py
+```
+## build C++ code for visualization
+cd visualizer
+bash build.sh 
+## run one example 
+python show3d_balls.py
+```  
+### Using MeshLab
+You can download MeshLab APP from here: [MeshLab](http://www.meshlab.net/).
 
 ## Reference by
 [halimacc/pointnet3](https://github.com/halimacc/pointnet3)<br>
