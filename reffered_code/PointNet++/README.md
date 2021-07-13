@@ -8,7 +8,7 @@ python train_semseg.py --model pointnet2_sem_seg --epoch 100 --log_dir pointnet2
 python test_semseg.py --log_dir pointnet2_sem_seg --root /home/ies/hyu/data/Zivid_Testset/labeled/ --test_area 5 --visual
 ```  
 You can set the your data folder by command `--root`
-The `--log_dir` command will build a new dir in the path './Pointnet_Pointnet2_pytorch/log/sem_seg/' and save the log and parameter used in training in this folder.  
+The `--log_dir` command will build a new dir in the path `./Pointnet_Pointnet2_pytorch/log/sem_seg/` and save the log and parameter used in training in this folder.  
 
 ## Reference by
 [halimacc/pointnet3](https://github.com/halimacc/pointnet3)<br>
