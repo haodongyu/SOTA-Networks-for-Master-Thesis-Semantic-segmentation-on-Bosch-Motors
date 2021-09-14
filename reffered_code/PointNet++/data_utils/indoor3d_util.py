@@ -10,12 +10,12 @@ sys.path.append(BASE_DIR)
 DATA_PATH = os.path.join(ROOT_DIR, 'data','s3dis', 'Stanford3dDataset_v1.2_Aligned_Version')
 g_classes = [x.rstrip() for x in open(os.path.join(BASE_DIR, 'meta/class_names.txt'))]
 g_class2label = {cls: i for i,cls in enumerate(g_classes)}
-g_class2color = {'ceiling':	[0,255,0],
-                 'floor':	[0,0,255],
-                 'wall':	[0,255,255],
+g_class2color = {'ceiling':	[0,0,255],
+                 'floor':	[0,100,0],
+                 'wall':	[0,255,0],
                  'beam':        [255,255,0],
-                 'column':      [255,0,255],
-                 'window':      [100,100,255],
+                 'column':      [255,165,0],
+                 'window':      [255,0,0],
                  'door':        [200,200,100],
                  'table':       [170,120,200],
                  'chair':       [255,0,0],
