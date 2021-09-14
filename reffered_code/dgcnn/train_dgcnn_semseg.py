@@ -5,13 +5,14 @@ Date: Nov 2019
 import argparse
 from operator import imod
 import os
-from data_utils.S3DISDataLoader import S3DISDataset
-from data_utils.S3DISDataLoader import MotorDataset
+# from data_utils.S3DISDataLoader import MotorDataset
+from data_utils.MotorDataLoader import MotorDataset
+from data_utils.indoor3d_util import g_label2color
 import torch
 import torch.optim as optim
 import torch.nn as nn
-import torchmetrics
-from pytorch_lightning.core.lightning import LightningModule
+# import torchmetrics
+# from pytorch_lightning.core.lightning import LightningModule
 import datetime
 import logging
 from pathlib import Path
@@ -24,12 +25,13 @@ import shutil
 from tqdm import tqdm
 import provider
 import numpy as np
+import time
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = BASE_DIR
 sys.path.append(os.path.join(ROOT_DIR, 'models'))
-tm_train_accuracy = torchmetrics.Accuracy()  # torchmetrics calculate accuracy
-tm_val_accuracy = torchmetrics.Accuracy()
+# tm_train_accuracy = torchmetrics.Accuracy()  # torchmetrics calculate accuracy
+# tm_val_accuracy = torchmetrics.Accuracy()
 
 classes = ['clampingSystem', 'cover', 'gearContainer', 'charger', 'bottom', 'bolt']                        # ['ceiling', 'floor', 'wall', 'beam', 'column', 'window', 'door', 'table', 'chair', 'sofa', 'bookcase',
                                                                                                            # 'board', 'clutter']
@@ -53,8 +55,10 @@ def parse_args():
     parser.add_argument('--gpu', type=str, default='0', help='GPU to use [default: GPU 0]')
     parser.add_argument('--optimizer', type=str, default='SGD', help='Adam or SGD [default: Adam]')
     parser.add_argument('--log_dir', type=str, default=None, help='Log path [default: None]')
+    parser.add_argument('--root', type=str, required=True, help='file need to be tested')
     parser.add_argument('--decay_rate', type=float, default=1e-4, help='weight decay [default: 1e-4]')
     parser.add_argument('--npoint', type=int, default=4096, help='Point Number [default: 4096]')
+    parser.add_argument('--bolt_weight', type=float, default=1.0, help='Training weight of bolts before init [default: 1.0]')
     parser.add_argument('--step_size', type=int, default=10, help='Decay step for lr decay [default: every 10 epochs]')
     parser.add_argument('--lr_decay', type=float, default=0.5, help='Decay rate for lr decay [default: 0.7]')
     parser.add_argument('--test_area', type=str, default='Validation', help='Which area to use for test, option: 1-6 [default: ]')
@@ -64,6 +68,7 @@ def parse_args():
     parser.add_argument('--emb_dims', type=int, default=1024, metavar='N', help='Dimension of embeddings')
     parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')
     parser.add_argument('--dropout', type=float, default=0.5, help='dropout rate')
+    parser.add_argument('--visual', action='store_true', default=True, help='visualize result [default: False]')
 
     return parser.parse_args()
 
@@ -92,6 +97,11 @@ def main(args):
     log_dir = experiment_dir.joinpath('logs/')
     log_dir.mkdir(exist_ok=True)
 
+    experiment_dir_1 = 'log/sem_seg/' + args.log_dir
+    visual_dir = experiment_dir_1 + '/visual/'
+    visual_dir = Path(visual_dir)
+    visual_dir.mkdir(exist_ok=True)
+
     '''LOG'''
     args = parse_args()
     logger = logging.getLogger("Model")
@@ -115,7 +125,7 @@ def main(args):
     writer = SummaryWriter(BASE_DIR + '/tensor/' + args.log_dir)
 
 
-    root = '/home/ies/hyu/data/Training_set_PointNet_0611/'
+    root = args.root
     NUM_CLASSES = 6
     NUM_POINT = args.npoint
     BATCH_SIZE = args.batch_size
@@ -125,13 +135,15 @@ def main(args):
     print("start loading test data ...")
     TEST_DATASET = MotorDataset(split='test', data_root=root, num_point=NUM_POINT, test_area=args.test_area, block_size=1.0, sample_rate=1.0, transform=None)
 
-    trainDataLoader = torch.utils.data.DataLoader(TRAIN_DATASET, batch_size=BATCH_SIZE, shuffle=True, num_workers=8,
+    trainDataLoader = torch.utils.data.DataLoader(TRAIN_DATASET, batch_size=BATCH_SIZE, shuffle=True, num_workers=10,
                                                   pin_memory=True, drop_last=True,
-                                                  )
-    testDataLoader = torch.utils.data.DataLoader(TEST_DATASET, batch_size=BATCH_SIZE, shuffle=True, num_workers=8,
+                                                  worker_init_fn=lambda x: np.random.seed(x + int(time.time())))
+    testDataLoader = torch.utils.data.DataLoader(TEST_DATASET, batch_size=BATCH_SIZE, shuffle=True, num_workers=10,
                                                  pin_memory=True, drop_last=True)
     weights = torch.Tensor(TRAIN_DATASET.labelweights).cuda()
+    weights_eachClass = TRAIN_DATASET.labelweights
 
+    log_string("The weight of each class areL %r" % weights_eachClass)
     log_string("The number of training data is: %d" % len(TRAIN_DATASET))
     log_string("The number of test data is: %d" % len(TEST_DATASET))
 
@@ -175,27 +187,11 @@ def main(args):
     except:
         log_string('No existing model, starting training from scratch...')
         start_epoch = 0
-       # model = model.apply(weights_init)
+  
 
-    # if args.optimizer == 'Adam':
-    #     optimizer = torch.optim.Adam(
-    #         model.parameters(),
-    #         lr=args.learning_rate,
-    #         betas=(0.9, 0.999),
-    #         eps=1e-08,
-    #         weight_decay=args.decay_rate
-    #     )
-    # else:
-    #     optimizer = torch.optim.SGD(model.parameters(), lr=args.learning_rate, momentum=0.9)
-
-    # def bn_momentum_adjust(m, momentum):
-    #     if isinstance(m, torch.nn.BatchNorm2d) or isinstance(m, torch.nn.BatchNorm1d):
-    #         m.momentum = momentum
+  
 
     LEARNING_RATE_CLIP = 1e-5
-    # MOMENTUM_ORIGINAL = 0.1
-    # MOMENTUM_DECCAY = 0.5
-    # MOMENTUM_DECCAY_STEP = args.step_size
 
     global_epoch = 0
     best_iou = 0
@@ -218,42 +214,73 @@ def main(args):
         loss_sum = 0
         model = model.train()
 
+        # if args.visual:
+        #        # fout = open(os.path.join(visual_dir, scene_id[batch_idx] + '_pred_.obj'), 'w')
+        #         fout_gt = open(os.path.join(visual_dir, str(epoch) + 'batch_gt.obj'), 'w')
+
         for i, (points, target) in tqdm(enumerate(trainDataLoader), total=len(trainDataLoader), smoothing=0.9):
             opt.zero_grad()
 
-            points = points.data.numpy()
-            points[:, :, :3] = provider.rotate_point_cloud_z(points[:, :, :3])
+            points = points.data.numpy()  #  32*4096*3
+            # target = target.data.numpy()
+            # current_pts = points[0,:,:]
+            #    # pred_np = scene_label[start_idx+i, :]
+            #    # current_pts[:,3:6] *= 255.0
+            #    # current_pred_label = batch_pred_label[i, :] 
+            # print('1111111111size of current points: ', current_pts.shape)
+            # for k in range(NUM_POINT):
+            #     # color = g_label2color[current_pred_label[k]]
+            #     color_gt = g_label2color[target[0, k]]
+            #     if args.visual:
+            #         # fout.write('v %f %f %f %d %d %d\n' % (
+            #         #     current_pts[k, 0], current_pts[k, 1], current_pts[k, 2], color[0], color[1],
+            #         #     color[2]))
+            #         fout_gt.write(
+            #             'v %f %f %f %d %d %d\n' % (
+            #             current_pts[k, 0], current_pts[k, 1], current_pts[k, 2], color_gt[0],
+            #             color_gt[1], color_gt[2]))
+            # if args.visual:
+            #     fout_gt.close()
+            
+            points[:, :, :3] = provider.rotate_point_cloud_z(points[:, :, :3])    #  32*4096*3
             points = torch.Tensor(points)
+           # target = torch.Tensor(target)
             points, target = points.float().cuda(), target.long().cuda()
             points = points.transpose(2, 1)
             
-
             seg_pred = model(points)
-            seg_pred = seg_pred.permute(0, 2, 1).contiguous()
+            seg_pred = seg_pred.permute(0, 2, 1).contiguous()  # 32*4096*6
+           # print('11111111111111111 size of seg_pred', seg_pred.size())
 
             batch_label = target.cpu().data.numpy()
-            target_to_metric = target.cpu()
+           # target_to_metric = target.cpu()
             target = target.view(-1, 1)[:, 0]
-            loss = criterion(seg_pred.view(-1, 13), target)
+            loss = criterion(seg_pred.view(-1, 6), target)
             loss.backward()
             opt.step()
 
             pred = seg_pred.max(dim=2)[1]
-            pred_cpu = pred.cpu() 
+           # pred_cpu = pred.cpu() 
             pred_np = pred.detach().cpu().numpy()
-           # print('111111111size of pred_np', pred_np.shape)
-           # print('22222222222size of batch label', batch_label.shape)
-           # pred_choice = seg_pred.cpu().data.max(1)[1].numpy()
+           
             correct = np.sum(pred_np == batch_label)   ####### ???
             total_correct += correct
             total_seen += (BATCH_SIZE * NUM_POINT)
             loss_sum += loss
+        
+        if args.scheduler == 'cos':
+            scheduler.step()
+        elif args.scheduler == 'step':
+            if opt.param_groups[0]['lr'] > 1e-5:
+                scheduler.step()
+            if opt.param_groups[0]['lr'] < 1e-5:
+                for param_group in opt.param_groups:
+                    param_group['lr'] = 1e-5
+
+
         log_string('Training mean loss: %f' % (loss_sum / num_batches))
         log_string('Training accuracy: %f' % (total_correct / float(total_seen)))
-        train_accuracy = tm_train_accuracy(pred_cpu, target_to_metric)
-        ######### calculate metric ############
-        # log_string('Training accuracy for metric: %f' % (train_accuracy))
-        # tm_train_accuracy.reset()
+       
         
 
         ###### write the tensorboard ################
@@ -300,21 +327,17 @@ def main(args):
                 seg_pred = seg_pred.permute(0, 2, 1).contiguous()
 
                 batch_label = target.cpu().data.numpy()
-                target_to_metric1 = target
                 target = target.view(-1, 1)[:, 0]
-                loss = criterion(seg_pred.view(-1, 13), target)
+                loss = criterion(seg_pred.view(-1, 6), target)
                 loss_sum += loss
                # pred_val = np.argmax(pred_val, 2)
                 pred = seg_pred.max(dim=2)[1]
-                pred_np = pred.detach().cpu().numpy()
+                pred_np = pred.detach().cpu().numpy()  # size = 32,4096
                 correct = np.sum((pred_np == batch_label))
                 total_correct += correct
                 total_seen += (BATCH_SIZE * NUM_POINT)
                 tmp, _ = np.histogram(batch_label, range(NUM_CLASSES + 1))
                 labelweights += tmp
-
-               # print("11111111111 size of pred_val", pred_np.shape)
-               # print("22222222222 size of batch_label", batch_label.shape)
 
                 for l in range(NUM_CLASSES):
                     total_seen_class[l] += np.sum((batch_label == l))
