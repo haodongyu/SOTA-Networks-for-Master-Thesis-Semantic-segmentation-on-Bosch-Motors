@@ -4,8 +4,7 @@ Date: Nov 2019
 """
 import argparse
 import os
-from data_utils.S3DISDataLoader import S3DISDataset
-from data_utils.S3DISDataLoader import MotorDataset
+from data_utils.MotorDataLoader import MotorDataset
 import torch
 import torch.nn as nn
 import datetime
@@ -40,15 +39,16 @@ def inplace_relu(m):
 def parse_args():
     parser = argparse.ArgumentParser('Model')
     parser.add_argument('--model', type=str, default='pointnet_sem_seg', help='model name [default: pointnet_sem_seg]')
-    parser.add_argument('--batch_size', type=int, default=16, help='Batch Size during training [default: 16]')
+    parser.add_argument('--batch_size', type=int, default=32, help='Batch Size during training [default: 16]')
     parser.add_argument('--epoch', default=32, type=int, help='Epoch to run [default: 32]')
     parser.add_argument('--learning_rate', default=0.001, type=float, help='Initial learning rate [default: 0.001]')
     parser.add_argument('--gpu', type=str, default='0', help='GPU to use [default: GPU 0]')
     parser.add_argument('--optimizer', type=str, default='Adam', help='Adam or SGD [default: Adam]')
+    parser.add_argument('--root', type=str, required=True, help='file need to be tested')
     parser.add_argument('--log_dir', type=str, default=None, help='Log path [default: None]')
     parser.add_argument('--decay_rate', type=float, default=1e-4, help='weight decay [default: 1e-4]')
     parser.add_argument('--npoint', type=int, default=4096, help='Point Number [default: 4096]')
-    parser.add_argument('--bolt_weight', type=float, default=1.0, help='Training weight of bolts before init [default: 10]')
+    parser.add_argument('--bolt_weight', type=float, default=1.0, help='Training weight of bolts before init [default: 1.0]')
     parser.add_argument('--step_size', type=int, default=10, help='Decay step for lr decay [default: every 10 epochs]')
     parser.add_argument('--lr_decay', type=float, default=0.7, help='Decay rate for lr decay [default: 0.7]')
     parser.add_argument('--test_area', type=str, default='Validation', help='Which area to use for test, option: 1-6 [default: ]')
@@ -102,7 +102,7 @@ def main(args):
     log_string('PARAMETER ...')
     log_string(args)
 
-    root = '/home/ies/hyu/data/Training_set_PointNet_0611/'
+    root = args.root
     NUM_CLASSES = 6
     NUM_POINT = args.npoint
     BATCH_SIZE = args.batch_size
@@ -200,12 +200,12 @@ def main(args):
             optimizer.zero_grad()
 
             points = points.data.numpy()
-            points[:, :, :3] = provider.rotate_point_cloud_z(points[:, :, :3])
+            points[:, :, :3] = provider.rotate_point_cloud_z(points[:, :, :3])  # data augument
             points = torch.Tensor(points)
             points, target = points.float().cuda(), target.long().cuda()
             points = points.transpose(2, 1)
 
-            seg_pred, trans_feat = classifier(points)
+            seg_pred, trans_feat = classifier(points)    # only used original coordinate in model 
             seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES)
 
             batch_label = target.view(-1, 1)[:, 0].cpu().data.numpy()
