@@ -299,7 +299,7 @@ class ScannetDatasetGridMotor():
 
     def __getitem__(self, index):
         point_set_ini = self.scene_points_list[index]
-        points = point_set_ini[:,:6]
+        points = point_set_ini[:,:6]   # total_num_points*6
 
         coor_min_test = np.array([-255.2752533,  -110.75037384,  519.2489624])
         coor_max_test = np.array([ 45.58950043, 125.44611359, 797.55413818])
@@ -339,7 +339,8 @@ class ScannetDatasetGridMotor():
                 replace = False if (point_size - point_idxs.size <= point_idxs.size) else True
                 point_idxs_repeat = np.random.choice(point_idxs, point_size - point_idxs.size, replace=replace)
                 point_idxs = np.concatenate((point_idxs, point_idxs_repeat))
-                np.random.shuffle(point_idxs)
+                np.random.shuffle(point_idxs)  # fix the range
+               # print('1111111111111', point_idxs.shape)
                 data_batch = points[point_idxs, :]
                 normlized_xyz = np.zeros((point_size, 3))
                 normlized_xyz[:, 0] = data_batch[:, 0] / coord_max[0]
@@ -353,16 +354,15 @@ class ScannetDatasetGridMotor():
                 label_batch = labels[point_idxs].astype(int)
                 batch_weight = self.labelweights[label_batch]
 
-                data_motor = np.vstack([data_motor, data_batch]) if data_motor.size else data_batch  # under Test: data_mptpr[0]=[4.58282471e-01 -5.00000000e-01  5.65709167e+02  6.00000000e+00  1.00000000e+01  1.00000000e+01 -2.23334254e+00 -8.82852172e-01  7.09305037e-01]
+                data_motor = np.vstack([data_motor, data_batch]) if data_motor.size else data_batch  # under Test: data_motor[0]=[4.58282471e-01 -5.00000000e-01  5.65709167e+02  6.00000000e+00  1.00000000e+01  1.00000000e+01 -2.23334254e+00 -8.82852172e-01  7.09305037e-01]
 
                 label_motor = np.hstack([label_motor, label_batch]) if label_motor.size else label_batch
                 sample_weight = np.hstack([sample_weight, batch_weight]) if label_motor.size else batch_weight
                 index_motor = np.hstack([index_motor, point_idxs]) if index_motor.size else point_idxs  # under Test: shape: += 4096
            # print('11111111111', index_motor.shape)                                                 # under Validation: First 73721, second 14220, end
-
-        data_motor = data_motor.reshape((-1, self.block_points, data_motor.shape[1]))
+        data_motor = data_motor.reshape((-1, self.block_points, data_motor.shape[1]))  # 215*N*9
         index_motor = index_motor.reshape((-1, self.block_points))
-        label_motor = label_motor.reshape((-1, self.block_points))
+        label_motor = label_motor.reshape((-1, self.block_points))      # 215*N
         sample_weight = sample_weight.reshape((-1, self.block_points))
         return data_motor, label_motor, sample_weight, index_motor
 
