@@ -21,6 +21,11 @@ If you do not have our prepared data any more, please follow the guide in [Motor
 python train_semseg.py --model pointnet2_sem_seg --epoch 100 --log_dir pointnet2_sem_seg --root /home/ies/hyu/data/
 python test_semseg_new.py --log_dir pointnet2_sem_seg --root /home/ies/hyu/data/ --visual --test_area Validation
 ```
+  
+You can set your data folder by command `--root`.  
+The `--log_dir` command will build a new dir in the path `./Pointnet_Pointnet2_pytorch/log/sem_seg/` and save the log and parameter used in training in this folder.
+The `--visual` command will build the predictied results into .obj file.  
+
 Visualization results will save in `log/sem_seg/pointnet2_sem_seg/visual/` and you can visualize these .obj file by [MeshLab](http://www.meshlab.net/).  
 
 If you want to run the evaluation process with other data, just reset the `--root dir`. Besides that, remenber the name of your data must have str `Validation` or `test`. And then change the `--test_area str` order in corresponding ways.  
