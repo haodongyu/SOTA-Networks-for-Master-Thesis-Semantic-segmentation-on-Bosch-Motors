@@ -21,6 +21,16 @@ referred code
   └─
 ```
 
+## Requirements
+
+- Python 3.7.0
+- PyTorch 1.6
+- CUDA 10.
+- package: tqdm, plyfile, h5py
+
+
+
+
 ## Reference by
 [halimacc/pointnet3](https://github.com/halimacc/pointnet3)<br>
 [fxia22/pointnet.pytorch](https://github.com/fxia22/pointnet.pytorch)<br>
