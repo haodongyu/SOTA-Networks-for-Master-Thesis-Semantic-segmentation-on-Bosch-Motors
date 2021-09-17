@@ -2,6 +2,11 @@
 
 This repo is implementation for [DGCNN](https://github.com/WangYueFt/dgcnn)in pytorch.
 
+## Data Prepareration
+
+If you do not have our prepared data any more, please follow the guide in [Motor-Point-Cloud-Dataset](https://github.com/haodongyu/Motor-Point-Cloud-Dataset).
+
+
 ## run training and test process:  
 
 ```
