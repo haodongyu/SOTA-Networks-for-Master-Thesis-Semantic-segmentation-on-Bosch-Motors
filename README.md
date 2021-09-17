@@ -7,8 +7,19 @@ For the further information about these two network please read :
 [AnTao97/dgcnn.pytorch](https://github.com/AnTao97/dgcnn.pytorch)
 
 ## Structure
->codes
-
+```
+referred code 
+  │
+  ├─PointNet++
+  │  │
+  │  ├─ README.md
+  |  └─ related codes
+  │
+  ├─dgcnn
+  │  ├─ README.md
+  |  └─ related codes
+  └─
+```
 
 ## Reference by
 [halimacc/pointnet3](https://github.com/halimacc/pointnet3)<br>
