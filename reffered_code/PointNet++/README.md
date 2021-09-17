@@ -23,7 +23,7 @@ python test_semseg_new.py --log_dir pointnet2_sem_seg --root /home/ies/hyu/data/
 ```
 Visualization results will save in `log/sem_seg/pointnet2_sem_seg/visual/` and you can visualize these .obj file by [MeshLab](http://www.meshlab.net/).  
 
-If you want to run the evaluation process with other data, just reset the '--root dir'. Besides that, remenber the name of your data must have str'Validation' or 'test'. And then change the '--test_area str' order in corresponding ways.
+If you want to run the evaluation process with other data, just reset the `--root dir`. Besides that, remenber the name of your data must have str `Validation` or `test`. And then change the `--test_area str` order in corresponding ways.  
 
 
 ## Visualization
